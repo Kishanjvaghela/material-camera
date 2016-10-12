@@ -18,6 +18,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.Window;
@@ -27,7 +28,6 @@ import com.afollestad.materialcamera.MaterialCamera;
 import com.afollestad.materialcamera.R;
 import com.afollestad.materialcamera.TimeLimitReachedException;
 import com.afollestad.materialcamera.util.CameraUtil;
-import com.afollestad.materialdialogs.MaterialDialog;
 
 import java.io.File;
 import java.lang.annotation.Retention;
@@ -39,6 +39,13 @@ import java.util.List;
  */
 public abstract class BaseCaptureActivity extends AppCompatActivity implements BaseCaptureInterface {
 
+    public static final int PERMISSION_RC = 69;
+    public static final int CAMERA_POSITION_UNKNOWN = 0;
+    public static final int CAMERA_POSITION_FRONT = 1;
+    public static final int CAMERA_POSITION_BACK = 2;
+    public static final int FLASH_MODE_OFF = 0;
+    public static final int FLASH_MODE_ALWAYS_ON = 1;
+    public static final int FLASH_MODE_AUTO = 2;
     private int mCameraPosition = CAMERA_POSITION_UNKNOWN;
     private int mFlashMode = FLASH_MODE_OFF;
     private boolean mRequestingPermission;
@@ -49,26 +56,6 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     private Object mBackCameraId;
     private boolean mDidRecord = false;
     private List<Integer> mFlashModes;
-
-    public static final int PERMISSION_RC = 69;
-
-    @IntDef({CAMERA_POSITION_UNKNOWN, CAMERA_POSITION_BACK, CAMERA_POSITION_FRONT})
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface CameraPosition {
-    }
-
-    public static final int CAMERA_POSITION_UNKNOWN = 0;
-    public static final int CAMERA_POSITION_FRONT = 1;
-    public static final int CAMERA_POSITION_BACK = 2;
-
-    @IntDef({FLASH_MODE_OFF, FLASH_MODE_ALWAYS_ON, FLASH_MODE_AUTO})
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface FlashMode {
-    }
-
-    public static final int FLASH_MODE_OFF = 0;
-    public static final int FLASH_MODE_ALWAYS_ON = 1;
-    public static final int FLASH_MODE_AUTO = 2;
 
     @Override
     protected final void onSaveInstanceState(Bundle outState) {
@@ -94,16 +81,17 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     protected final void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (!CameraUtil.hasCamera(this)) {
-            new MaterialDialog.Builder(this)
-                    .title(R.string.mcam_error)
-                    .content(R.string.mcam_video_capture_unsupported)
-                    .positiveText(android.R.string.ok)
-                    .dismissListener(new DialogInterface.OnDismissListener() {
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                            finish();
-                        }
-                    }).show();
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.mcam_error);
+            builder.setMessage(R.string.mcam_video_capture_unsupported);
+            builder.setPositiveButton(android.R.string.ok, null);
+            builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    finish();
+                }
+            });
+            builder.show();
             return;
         }
         setContentView(R.layout.mcam_activity_videocapture);
@@ -209,6 +197,11 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     }
 
     @Override
+    public long getRecordingStart() {
+        return mRecordingStart;
+    }
+
+    @Override
     public void setRecordingStart(long start) {
         mRecordingStart = start;
         if (start > -1 && hasLengthLimit())
@@ -217,18 +210,13 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     }
 
     @Override
-    public long getRecordingStart() {
-        return mRecordingStart;
+    public long getRecordingEnd() {
+        return mRecordingEnd;
     }
 
     @Override
     public void setRecordingEnd(long end) {
         mRecordingEnd = end;
-    }
-
-    @Override
-    public long getRecordingEnd() {
-        return mRecordingEnd;
     }
 
     @Override
@@ -277,23 +265,23 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     }
 
     @Override
-    public void setFrontCamera(Object id) {
-        mFrontCameraId = id;
-    }
-
-    @Override
     public Object getFrontCamera() {
         return mFrontCameraId;
     }
 
     @Override
-    public void setBackCamera(Object id) {
-        mBackCameraId = id;
+    public void setFrontCamera(Object id) {
+        mFrontCameraId = id;
     }
 
     @Override
     public Object getBackCamera() {
         return mBackCameraId;
+    }
+
+    @Override
+    public void setBackCamera(Object id) {
+        mBackCameraId = id;
     }
 
     private void showInitialRecorder() {
@@ -378,16 +366,17 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         mRequestingPermission = false;
         if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
-            new MaterialDialog.Builder(this)
-                    .title(R.string.mcam_permissions_needed)
-                    .content(R.string.mcam_video_perm_warning)
-                    .positiveText(android.R.string.ok)
-                    .dismissListener(new DialogInterface.OnDismissListener() {
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                            finish();
-                        }
-                    }).show();
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(R.string.mcam_permissions_needed);
+            builder.setMessage(R.string.mcam_video_perm_warning);
+            builder.setPositiveButton(android.R.string.ok, null);
+            builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    finish();
+                }
+            });
+            builder.show();
         } else {
             showInitialRecorder();
         }
@@ -573,5 +562,15 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     @Override
     public long autoRecordDelay() {
         return getIntent().getLongExtra(CameraIntentKey.AUTO_RECORD, -1);
+    }
+
+    @IntDef({CAMERA_POSITION_UNKNOWN, CAMERA_POSITION_BACK, CAMERA_POSITION_FRONT})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface CameraPosition {
+    }
+
+    @IntDef({FLASH_MODE_OFF, FLASH_MODE_ALWAYS_ON, FLASH_MODE_AUTO})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface FlashMode {
     }
 }

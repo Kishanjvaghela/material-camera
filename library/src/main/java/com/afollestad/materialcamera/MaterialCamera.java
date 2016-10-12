@@ -18,7 +18,7 @@ import android.support.v4.content.ContextCompat;
 
 import com.afollestad.materialcamera.internal.CameraIntentKey;
 import com.afollestad.materialcamera.util.CameraUtil;
-import com.afollestad.materialdialogs.util.DialogUtils;
+import com.afollestad.materialcamera.util.Utils;
 
 import java.io.File;
 import java.lang.annotation.Retention;
@@ -30,23 +30,15 @@ import java.lang.annotation.RetentionPolicy;
 @SuppressWarnings("WeakerAccess")
 public class MaterialCamera {
 
-    @IntDef({QUALITY_HIGH, QUALITY_LOW, QUALITY_480P, QUALITY_720P, QUALITY_1080P})
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface QualityProfile {
-    }
-
     public static final int QUALITY_HIGH = CamcorderProfile.QUALITY_HIGH;
     public static final int QUALITY_LOW = CamcorderProfile.QUALITY_LOW;
     public static final int QUALITY_480P = CamcorderProfile.QUALITY_480P;
     public static final int QUALITY_720P = CamcorderProfile.QUALITY_720P;
     public static final int QUALITY_1080P = CamcorderProfile.QUALITY_1080P;
-
     public static final String ERROR_EXTRA = "mcam_error";
     public static final String STATUS_EXTRA = "mcam_status";
-
     public static final int STATUS_RECORDED = 1;
     public static final int STATUS_RETRY = 2;
-
     private Context mContext;
     private Activity mActivityContext;
     private android.app.Fragment mAppFragment;
@@ -66,7 +58,6 @@ public class MaterialCamera {
     private boolean mForceCamera1 = false;
     private boolean mStillShot;
     private long mAutoRecord = -1;
-
     private int mVideoEncodingBitRate = -1;
     private int mAudioEncodingBitRate = -1;
     private int mVideoFrameRate = -1;
@@ -74,7 +65,6 @@ public class MaterialCamera {
     private float mVideoPreferredAspect = -1f;
     private long mMaxFileSize = -1;
     private int mQualityProfile = -1;
-
     private int mIconRecord;
     private int mIconStop;
     private int mIconFrontCamera;
@@ -82,14 +72,12 @@ public class MaterialCamera {
     private int mIconPlay;
     private int mIconPause;
     private int mIconRestart;
-
     private int mLabelRetry;
     private int mLabelConfirm;
-
     public MaterialCamera(@NonNull Activity context) {
         mContext = context;
         mActivityContext = context;
-        mPrimaryColor = DialogUtils.resolveColor(context, R.attr.colorPrimary);
+        mPrimaryColor = Utils.resolveColor(context, R.attr.colorPrimary);
     }
 
     public MaterialCamera(@NonNull android.app.Fragment context) {
@@ -97,7 +85,7 @@ public class MaterialCamera {
         mContext = context.getActivity();
         mAppFragment = context;
         mSupportFragment = null;
-        mPrimaryColor = DialogUtils.resolveColor(mContext, R.attr.colorPrimary);
+        mPrimaryColor = Utils.resolveColor(mContext, R.attr.colorPrimary);
     }
 
     public MaterialCamera(@NonNull android.support.v4.app.Fragment context) {
@@ -105,7 +93,7 @@ public class MaterialCamera {
         mContext = context.getContext();
         mSupportFragment = context;
         mAppFragment = null;
-        mPrimaryColor = DialogUtils.resolveColor(mContext, R.attr.colorPrimary);
+        mPrimaryColor = Utils.resolveColor(mContext, R.attr.colorPrimary);
     }
 
     public MaterialCamera countdownMillis(long lengthLimitMs) {
@@ -156,7 +144,7 @@ public class MaterialCamera {
     }
 
     public MaterialCamera primaryColorAttr(@AttrRes int colorAttr) {
-        return primaryColor(DialogUtils.resolveColor(mContext, colorAttr));
+        return primaryColor(Utils.resolveColor(mContext, colorAttr));
     }
 
     public MaterialCamera showPortraitWarning(boolean show) {
@@ -366,5 +354,10 @@ public class MaterialCamera {
             mAppFragment.startActivityForResult(getIntent(), requestCode);
         else
             mActivityContext.startActivityForResult(getIntent(), requestCode);
+    }
+
+    @IntDef({QUALITY_HIGH, QUALITY_LOW, QUALITY_480P, QUALITY_720P, QUALITY_1080P})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface QualityProfile {
     }
 }

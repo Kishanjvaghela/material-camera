@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,7 +16,6 @@ import com.afollestad.easyvideoplayer.EasyVideoCallback;
 import com.afollestad.easyvideoplayer.EasyVideoPlayer;
 import com.afollestad.materialcamera.R;
 import com.afollestad.materialcamera.util.CameraUtil;
-import com.afollestad.materialdialogs.MaterialDialog;
 
 /**
  * @author Aidan Follestad (afollestad)
@@ -43,13 +43,6 @@ public class PlaybackVideoFragment extends Fragment implements CameraUriInterfac
         }
     };
 
-    @SuppressWarnings("deprecation")
-    @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        mInterface = (BaseCaptureInterface) activity;
-    }
-
     public static PlaybackVideoFragment newInstance(String outputUri, boolean allowRetry, int primaryColor) {
         PlaybackVideoFragment fragment = new PlaybackVideoFragment();
         fragment.setRetainInstance(true);
@@ -59,6 +52,13 @@ public class PlaybackVideoFragment extends Fragment implements CameraUriInterfac
         args.putInt(CameraIntentKey.PRIMARY_COLOR, primaryColor);
         fragment.setArguments(args);
         return fragment;
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mInterface = (BaseCaptureInterface) activity;
     }
 
     @Override
@@ -168,10 +168,10 @@ public class PlaybackVideoFragment extends Fragment implements CameraUriInterfac
 
     @Override
     public void onError(EasyVideoPlayer player, Exception e) {
-        new MaterialDialog.Builder(getActivity())
-                .title(R.string.mcam_error)
-                .content(e.getMessage())
-                .positiveText(android.R.string.ok)
+        new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.mcam_error)
+                .setMessage(e.getMessage())
+                .setPositiveButton(android.R.string.ok, null)
                 .show();
     }
 

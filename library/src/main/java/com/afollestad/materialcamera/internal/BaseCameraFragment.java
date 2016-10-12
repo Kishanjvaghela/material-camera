@@ -3,6 +3,7 @@ package com.afollestad.materialcamera.internal;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.ColorStateList;
@@ -16,6 +17,7 @@ import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,8 +30,6 @@ import com.afollestad.materialcamera.MaterialCamera;
 import com.afollestad.materialcamera.R;
 import com.afollestad.materialcamera.util.CameraUtil;
 import com.afollestad.materialcamera.util.Degrees;
-import com.afollestad.materialdialogs.DialogAction;
-import com.afollestad.materialdialogs.MaterialDialog;
 
 import java.io.File;
 
@@ -50,19 +50,9 @@ abstract class BaseCameraFragment extends Fragment implements CameraUriInterface
     protected ImageButton mButtonFlash;
     protected TextView mRecordDuration;
     protected TextView mDelayStartCountdown;
-
-    private boolean mIsRecording;
     protected String mOutputUri;
     protected BaseCaptureInterface mInterface;
     protected Handler mPositionHandler;
-    protected MediaRecorder mMediaRecorder;
-    private int mIconTextColor;
-
-    protected static void LOG(Object context, String message) {
-        Log.d(context instanceof Class<?> ? ((Class<?>) context).getSimpleName() :
-                context.getClass().getSimpleName(), message);
-    }
-
     private final Runnable mPositionUpdater = new Runnable() {
         @Override
         public void run() {
@@ -85,6 +75,17 @@ abstract class BaseCameraFragment extends Fragment implements CameraUriInterface
                 mPositionHandler.postDelayed(this, 1000);
         }
     };
+    protected MediaRecorder mMediaRecorder;
+    private boolean mIsRecording;
+    private int mIconTextColor;
+    private boolean mDidAutoRecord = false;
+    private Handler mDelayHandler;
+    private int mDelayCurrentSecond = -1;
+
+    protected static void LOG(Object context, String message) {
+        Log.d(context instanceof Class<?> ? ((Class<?>) context).getSimpleName() :
+                context.getClass().getSimpleName(), message);
+    }
 
     @Override
     public final View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -165,10 +166,6 @@ abstract class BaseCameraFragment extends Fragment implements CameraUriInterface
             invalidateFlash();
         }
     }
-
-    private boolean mDidAutoRecord = false;
-    private Handler mDelayHandler;
-    private int mDelayCurrentSecond = -1;
 
     protected void onCameraOpened() {
         if (mDidAutoRecord || mInterface == null || mInterface.useStillshot() || mInterface.autoRecordDelay() < 0 || getActivity() == null) {
@@ -393,18 +390,18 @@ abstract class BaseCameraFragment extends Fragment implements CameraUriInterface
             } else {
                 if (getArguments().getBoolean(CameraIntentKey.SHOW_PORTRAIT_WARNING, true) &&
                         Degrees.isPortrait(getActivity())) {
-                    new MaterialDialog.Builder(getActivity())
-                            .title(R.string.mcam_portrait)
-                            .content(R.string.mcam_portrait_warning)
-                            .positiveText(R.string.mcam_yes)
-                            .negativeText(android.R.string.cancel)
-                            .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                    builder.setTitle(R.string.mcam_portrait);
+                    builder.setMessage(R.string.mcam_portrait_warning);
+                    builder.setPositiveButton(R.string.mcam_yes,
+                            new DialogInterface.OnClickListener() {
                                 @Override
-                                public void onClick(@NonNull MaterialDialog materialDialog, @NonNull DialogAction dialogAction) {
+                                public void onClick(DialogInterface dialog, int which) {
                                     mIsRecording = startRecordingVideo();
                                 }
-                            })
-                            .show();
+                            });
+                    builder.setNegativeButton(android.R.string.cancel, null);
+                    builder.show();
                 } else {
                     mIsRecording = startRecordingVideo();
                 }

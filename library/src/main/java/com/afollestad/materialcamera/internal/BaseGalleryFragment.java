@@ -5,12 +5,12 @@ import android.app.Fragment;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.view.View;
 import android.widget.Button;
 
 import com.afollestad.materialcamera.R;
 import com.afollestad.materialcamera.util.CameraUtil;
-import com.afollestad.materialdialogs.MaterialDialog;
 
 public abstract class BaseGalleryFragment extends Fragment implements CameraUriInterface, View.OnClickListener {
 
@@ -66,10 +66,10 @@ public abstract class BaseGalleryFragment extends Fragment implements CameraUriI
     }
 
     void showDialog(String title, String errorMsg) {
-        new MaterialDialog.Builder(getActivity())
-                .title(title)
-                .content(errorMsg)
-                .positiveText(android.R.string.ok)
+        new AlertDialog.Builder(getActivity())
+                .setTitle(title)
+                .setMessage(errorMsg)
+                .setPositiveButton(android.R.string.ok, null)
                 .show();
     }
 }

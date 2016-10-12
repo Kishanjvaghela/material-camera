@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Size;
+import android.support.v7.app.AlertDialog;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -21,7 +22,6 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import com.afollestad.materialcamera.R;
-import com.afollestad.materialdialogs.MaterialDialog;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -31,6 +31,95 @@ import java.lang.annotation.RetentionPolicy;
  */
 public class VideoStreamView extends SurfaceView implements SurfaceHolder.Callback,
         MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener, MediaPlayer.OnBufferingUpdateListener, MediaPlayer.OnVideoSizeChangedListener {
+
+    protected Uri mUri;
+    protected MediaPlayer mPlayer;
+    private Activity mContext;
+    private Callback mCallback;
+    private boolean mAutoPlay;
+
+    public VideoStreamView(Context context) {
+        super(context);
+        initPlayer();
+    }
+
+    public VideoStreamView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        initPlayer();
+    }
+
+    public VideoStreamView(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        initPlayer();
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    public VideoStreamView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
+        initPlayer();
+    }
+
+    @ActivityOrientation
+    public static int getScreenOrientation(Activity context) {
+        int rotation = context.getWindowManager().getDefaultDisplay().getRotation();
+        DisplayMetrics dm = new DisplayMetrics();
+        context.getWindowManager().getDefaultDisplay().getMetrics(dm);
+        int width = dm.widthPixels;
+        int height = dm.heightPixels;
+        int orientation;
+        // if the device's natural orientation is portrait:
+        if ((rotation == Surface.ROTATION_0
+                || rotation == Surface.ROTATION_180) && height > width ||
+                (rotation == Surface.ROTATION_90
+                        || rotation == Surface.ROTATION_270) && width > height) {
+            switch (rotation) {
+                case Surface.ROTATION_0:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                    break;
+                case Surface.ROTATION_90:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                    break;
+                case Surface.ROTATION_180:
+                    orientation =
+                            ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
+                    break;
+                case Surface.ROTATION_270:
+                    orientation =
+                            ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                    break;
+                default:
+                    Log.e("VideoStreamView", "Unknown screen orientation. Defaulting to portrait.");
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                    break;
+            }
+        }
+        // if the device's natural orientation is landscape or if the device
+        // is square:
+        else {
+            switch (rotation) {
+                case Surface.ROTATION_0:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                    break;
+                case Surface.ROTATION_90:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                    break;
+                case Surface.ROTATION_180:
+                    orientation =
+                            ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                    break;
+                case Surface.ROTATION_270:
+                    orientation =
+                            ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
+                    break;
+                default:
+                    Log.e("VideoStreamView", "Unknown screen orientation. Defaulting to landscape.");
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                    break;
+            }
+        }
+
+        return orientation;
+    }
 
     @Override
     public void onPrepared(MediaPlayer mp) {
@@ -68,37 +157,6 @@ public class VideoStreamView extends SurfaceView implements SurfaceHolder.Callba
         requestLayout();
     }
 
-    public interface Callback {
-        void onPrepared(MediaPlayer mp);
-
-        void onCompleted();
-
-        void onError(MediaPlayer mp, int what, int extra);
-
-        void onBuffer(int percent);
-    }
-
-    public VideoStreamView(Context context) {
-        super(context);
-        initPlayer();
-    }
-
-    public VideoStreamView(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        initPlayer();
-    }
-
-    public VideoStreamView(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        initPlayer();
-    }
-
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    public VideoStreamView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
-        initPlayer();
-    }
-
     public void saveInstanceState(Bundle to) {
         to.putParcelable("uri", mUri);
     }
@@ -123,12 +181,6 @@ public class VideoStreamView extends SurfaceView implements SurfaceHolder.Callba
         mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
     }
 
-    private Activity mContext;
-    protected Uri mUri;
-    private Callback mCallback;
-    protected MediaPlayer mPlayer;
-    private boolean mAutoPlay;
-
     public void setAutoPlay(boolean autoPlay) {
         mAutoPlay = autoPlay;
     }
@@ -149,10 +201,10 @@ public class VideoStreamView extends SurfaceView implements SurfaceHolder.Callba
         } catch (Throwable e) {
             Log.d("VideoStreamView", "Failed to setDataSource/prepareAsync: " + e.getMessage());
             e.printStackTrace();
-            new MaterialDialog.Builder(mContext)
-                    .title(R.string.mcam_error)
-                    .content(e.getMessage())
-                    .positiveText(android.R.string.ok)
+            new AlertDialog.Builder(mContext)
+                    .setTitle(R.string.mcam_error)
+                    .setMessage(e.getMessage())
+                    .setPositiveButton(android.R.string.ok, null)
                     .show();
         }
     }
@@ -259,74 +311,6 @@ public class VideoStreamView extends SurfaceView implements SurfaceHolder.Callba
 //        }
 //    }
 
-    @IntDef({ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
-            ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT, ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE})
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface ActivityOrientation {
-    }
-
-    @ActivityOrientation
-    public static int getScreenOrientation(Activity context) {
-        int rotation = context.getWindowManager().getDefaultDisplay().getRotation();
-        DisplayMetrics dm = new DisplayMetrics();
-        context.getWindowManager().getDefaultDisplay().getMetrics(dm);
-        int width = dm.widthPixels;
-        int height = dm.heightPixels;
-        int orientation;
-        // if the device's natural orientation is portrait:
-        if ((rotation == Surface.ROTATION_0
-                || rotation == Surface.ROTATION_180) && height > width ||
-                (rotation == Surface.ROTATION_90
-                        || rotation == Surface.ROTATION_270) && width > height) {
-            switch (rotation) {
-                case Surface.ROTATION_0:
-                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-                    break;
-                case Surface.ROTATION_90:
-                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-                    break;
-                case Surface.ROTATION_180:
-                    orientation =
-                            ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
-                    break;
-                case Surface.ROTATION_270:
-                    orientation =
-                            ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                    break;
-                default:
-                    Log.e("VideoStreamView", "Unknown screen orientation. Defaulting to portrait.");
-                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-                    break;
-            }
-        }
-        // if the device's natural orientation is landscape or if the device
-        // is square:
-        else {
-            switch (rotation) {
-                case Surface.ROTATION_0:
-                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-                    break;
-                case Surface.ROTATION_90:
-                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-                    break;
-                case Surface.ROTATION_180:
-                    orientation =
-                            ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                    break;
-                case Surface.ROTATION_270:
-                    orientation =
-                            ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
-                    break;
-                default:
-                    Log.e("VideoStreamView", "Unknown screen orientation. Defaulting to landscape.");
-                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-                    break;
-            }
-        }
-
-        return orientation;
-    }
-
     @Size(value = 2)
     private int[] getDimensions(int orientation, float videoWidth, float videoHeight) {
         final float aspectRatio = videoWidth / videoHeight;
@@ -368,5 +352,21 @@ public class VideoStreamView extends SurfaceView implements SurfaceHolder.Callba
         } catch (Throwable e) {
             e.printStackTrace();
         }
+    }
+
+    public interface Callback {
+        void onPrepared(MediaPlayer mp);
+
+        void onCompleted();
+
+        void onError(MediaPlayer mp, int what, int extra);
+
+        void onBuffer(int percent);
+    }
+
+    @IntDef({ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
+            ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT, ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface ActivityOrientation {
     }
 }
